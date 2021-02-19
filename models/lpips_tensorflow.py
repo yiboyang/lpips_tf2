@@ -1,4 +1,3 @@
-# import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Lambda, Dropout, Conv2D, Permute
@@ -51,13 +50,14 @@ def learned_perceptual_metric_model(image_size, vgg_model_ckpt_fn, lin_model_ckp
     # run on learned linear model
     lin_out = lin(diffs)
 
-    # take spatial average
-    lin_out = [Lambda(lambda x: tf.reduce_mean(x, axis=[2, 3], keepdims=True))(t) for t in lin_out]
+    # take spatial average: list([N, 1], [N, 1], [N, 1], [N, 1], [N, 1])
+    lin_out = [Lambda(lambda x: tf.reduce_mean(x, axis=[2, 3], keepdims=False))(t) for t in lin_out]
 
-    # take sum of all layers
-    # lin_out = Lambda(lambda x: tf.reduce_sum(x))(lin_out)
-    lin_out = Lambda(lambda x: tf.reduce_sum(x, axis=[0], keepdims=False))(lin_out)
-    lin_out = Lambda(lambda x: tf.squeeze(x))(lin_out)
+    # take sum of all layers: [N, 1]
+    lin_out = Lambda(lambda x: tf.add_n(x))(lin_out)
+    
+    # squeeze: [N, ]
+    lin_out = Lambda(lambda x: tf.squeeze(x, axis=-1))(lin_out)
 
     final_model = Model(inputs=[input1, input2], outputs=lin_out)
     return final_model

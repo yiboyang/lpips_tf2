@@ -10,7 +10,6 @@ def load_image(fn):
     image = Image.open(fn)
     image = np.asarray(image)
     image = np.expand_dims(image, axis=0)
-
     image = tf.constant(image, dtype=tf.dtypes.float32)
     return image
 
@@ -21,19 +20,23 @@ vgg_ckpt_fn = os.path.join(model_dir, 'vgg', 'exported')
 lin_ckpt_fn = os.path.join(model_dir, 'lin', 'exported')
 lpips = learned_perceptual_metric_model(image_size, vgg_ckpt_fn, lin_ckpt_fn)
 
-# official pytorch model value:
-# Distance: ex_ref.png <-> ex_p0.png = 0.569
-# Distance: ex_ref.png <-> ex_p1.png = 0.422
+# official pytorch model metric value
+# ex_ref.png <-> ex_p0.png: 0.569
+# ex_ref.png <-> ex_p1.png: 0.422
 image_fn1 = './imgs/ex_ref.png'
 image_fn2 = './imgs/ex_p0.png'
 image_fn3 = './imgs/ex_p1.png'
 
+# images should be RGB normalized to [0.0, 255.0]
 image1 = load_image(image_fn1)
 image2 = load_image(image_fn2)
 image3 = load_image(image_fn3)
 
-batch_target = tf.concat([image1, image1], axis=0)
-batch_images = tf.concat([image2, image3], axis=0)
-dist = lpips([batch_target, batch_images])
-print('Distance ref <-> p0: {:.3f}'.format(dist[0]))
-print('Distance ref <-> p1: {:.3f}'.format(dist[1]))
+batch_ref = tf.concat([image1, image1], axis=0)
+batch_inp = tf.concat([image2, image3], axis=0)
+metric = lpips([batch_ref, batch_inp])
+print(f'ref shape: {batch_ref.shape}')
+print(f'inp shape: {batch_inp.shape}')
+print(f'lpips metric shape: {metric.shape}')
+print(f'ref <-> p0: {metric[0]:.3f}')
+print(f'ref <-> p1: {metric[1]:.3f}')

@@ -2,6 +2,11 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Lambda, Dropout, Conv2D, Permute
 from tensorflow.keras.applications.vgg16 import VGG16
+import functools
+
+from pathlib import Path
+VGG_CKPT_PATH = Path(__file__).parent / './vgg/exported'
+LIN_CKPT_PATH = Path(__file__).parent / './lin/exported'
 
 
 def image_preprocess(image):
@@ -14,17 +19,18 @@ def image_preprocess(image):
     image = (image - shift) / scale
     return image
 
-
-def learned_perceptual_metric_model(image_size, vgg_model_ckpt_fn, lin_model_ckpt_fn):
+@functools.cache
+def learned_perceptual_metric_model(image_hw,
+        vgg_model_ckpt_fn=VGG_CKPT_PATH, lin_model_ckpt_fn=LIN_CKPT_PATH):
     # initialize all models
-    net = perceptual_model(image_size)
-    lin = linear_model(image_size)
+    net = perceptual_model(image_hw)
+    lin = linear_model(image_hw)
     net.load_weights(vgg_model_ckpt_fn)
     lin.load_weights(lin_model_ckpt_fn)
 
     # merge two model
-    input1 = Input(shape=(image_size, image_size, 3), dtype='float32', name='input1')
-    input2 = Input(shape=(image_size, image_size, 3), dtype='float32', name='input2')
+    input1 = Input(shape=(image_hw[0], image_hw[1], 3), dtype='float32', name='input1')
+    input2 = Input(shape=(image_hw[0], image_hw[1], 3), dtype='float32', name='input2')
 
     # preprocess input images
     net_out1 = Lambda(lambda x: image_preprocess(x))(input1)
@@ -111,14 +117,15 @@ def learned_perceptual_metric_model(image_size, vgg_model_ckpt_fn, lin_model_ckp
 
 
 # tf.keras.applications
-def perceptual_model(image_size):
+def perceptual_model(image_hw):
     # (None, 64, 64, 64)
     # (None, 32, 32, 128)
     # (None, 16, 16, 256)
     # (None, 8, 8, 512)
     # (None, 4, 4, 512)
     layers = ['block1_conv2', 'block2_conv2', 'block3_conv3', 'block4_conv3', 'block5_conv3']
-    vgg16 = VGG16(include_top=False, weights='imagenet', input_shape=(image_size, image_size, 3))
+    vgg16 = VGG16(include_top=False, weights='imagenet',
+            input_shape=(image_hw[0], image_hw[1], 3))
 
     vgg16_output_layers = [l.output for l in vgg16.layers if l.name in layers]
     model = Model(vgg16.input, vgg16_output_layers, name='perceptual_model')
@@ -161,16 +168,19 @@ def perceptual_model(image_size):
 # )
 
 # functional api
-def linear_model(input_image_size):
-    assert isinstance(input_image_size, int)
-
+def linear_model(image_hw):
     vgg_channels = [64, 128, 256, 512, 512]
+    downsample_factor = 2 ** (len(vgg_channels)-1)
+    assert image_hw[0] % downsample_factor == 0 and image_hw[1] % downsample_factor == 0
+    # assert isinstance(input_image_size, int)
+
+
     inputs, outputs = list(), list()
     for ii, channel in enumerate(vgg_channels):
         name = 'lin{}'.format(ii)
-        image_size = input_image_size // (2 ** ii)
+        input_shape = [image_hw[0] // (2 ** ii), image_hw[1] // (2 ** ii)]
 
-        model_input = Input(shape=(channel, image_size, image_size), dtype='float32')
+        model_input = Input(shape=(channel, input_shape[0], input_shape[1]), dtype='float32')
         model_output = Dropout(rate=0.5, dtype='float32')(model_input)
         model_output = Conv2D(filters=1, kernel_size=1, strides=1, use_bias=False, dtype='float32',
                               data_format='channels_first', name=name)(model_output)

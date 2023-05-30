@@ -5,8 +5,10 @@ from tensorflow.keras.applications.vgg16 import VGG16
 import functools
 
 from pathlib import Path
-VGG_CKPT_PATH = Path(__file__).parent / './vgg/exported'
-LIN_CKPT_PATH = Path(__file__).parent / './lin/exported'
+import os
+abs_cwd = Path(os.path.realpath(__file__)).parent
+VGG_CKPT_PATH = abs_cwd / './vgg/exported'
+LIN_CKPT_PATH = abs_cwd / './lin/exported'
 
 
 def image_preprocess(image):

@@ -7,11 +7,12 @@ import functools
 from pathlib import Path
 import os
 abs_cwd = Path(os.path.realpath(__file__)).parent
-VGG_CKPT_PATH = abs_cwd / './vgg/exported'
-LIN_CKPT_PATH = abs_cwd / './lin/exported'
+VGG_CKPT_PATH = abs_cwd / './models/vgg/exported'
+LIN_CKPT_PATH = abs_cwd / './models/lin/exported'
 
 
 def image_preprocess(image):
+    image = tf.cast(image, tf.float32)
     factor = 255.0 / 2.0
     center = 1.0
     scale = tf.constant([0.458, 0.448, 0.450])[None, None, None, :]
@@ -172,8 +173,10 @@ def perceptual_model(image_hw):
 # functional api
 def linear_model(image_hw):
     vgg_channels = [64, 128, 256, 512, 512]
-    downsample_factor = 2 ** (len(vgg_channels)-1)
-    assert image_hw[0] % downsample_factor == 0 and image_hw[1] % downsample_factor == 0
+    # downsample_factor = 2 ** (len(vgg_channels)-1)
+    # assert image_hw[0] % downsample_factor == 0 and image_hw[1] % downsample_factor == 0
+    # Turns out things work fine even if the img dim is not divisable by the
+    # downsample_factor=16, as long as it is >= 16.
     # assert isinstance(input_image_size, int)
 
 

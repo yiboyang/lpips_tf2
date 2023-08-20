@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from PIL import Image
 
-from models.lpips_tensorflow import learned_perceptual_metric_model
+from lpips_tensorflow import learned_perceptual_metric_model
 
 
 def load_image(fn):
@@ -17,17 +17,21 @@ def load_image(fn):
 # official pytorch model metric value
 # ex_ref.png <-> ex_p0.png: 0.569
 # ex_ref.png <-> ex_p1.png: 0.422
-# image_fn1 = './imgs/ex_ref.png'
-# image_fn2 = './imgs/ex_p0.png'
-# image_fn3 = './imgs/ex_p1.png'
+image_fn1 = './imgs/ex_ref.png'
+image_fn2 = './imgs/ex_p0.png'
+image_fn3 = './imgs/ex_p1.png'
 
 # image_fn1 = './imgs/kitten.png'
 # image_fn2 = './imgs/kitten.png'
 # image_fn3 = './imgs/puppy.png'
 
-image_fn1 = '/extra/ucibdl0/shared/data/kodak/kodim01.png'
-image_fn2 = '/extra/ucibdl0/shared/data/kodak/kodim01.png'
-image_fn3 = '/extra/ucibdl0/shared/data/kodak/kodim03.png'
+# image_fn1 = '/extra/ucibdl0/shared/data/kodak/kodim01.png'
+# image_fn2 = '/extra/ucibdl0/shared/data/kodak/kodim01.png'
+# image_fn3 = '/extra/ucibdl0/shared/data/kodak/kodim03.png'
+
+# image_fn1 = '/home/yiboyang/data/Tecnick_TESTIMAGES/RGB/RGB_OR_1200x1200/RGB_OR_1200x1200_001.png'
+# image_fn2 = '/home/yiboyang/data/Tecnick_TESTIMAGES/RGB/RGB_OR_1200x1200/RGB_OR_1200x1200_001.png'
+# image_fn3 = '/home/yiboyang/data/Tecnick_TESTIMAGES/RGB/RGB_OR_1200x1200/RGB_OR_1200x1200_003.png'
 
 # images should be RGB normalized to [0.0, 255.0]
 image1 = load_image(image_fn1)
@@ -36,9 +40,9 @@ image3 = load_image(image_fn3)
 
 from time import perf_counter
 prev = perf_counter()
-for i in range(10):
+for i in range(3):
     cur = perf_counter()
-    print(f'Running {i}, took {cur-prev} s')
+    print(f'Run {i}, took {cur-prev} s')
     prev = cur
 
     image_hw = tuple((image1.shape)[-3:-1])
